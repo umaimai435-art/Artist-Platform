@@ -6,7 +6,7 @@ const {
   getArtistDashboard,
   getBuyerDashboard,
   getAdminDashboard,
-} = require("../controller/dashboardController");
+} = require("../controllers/dashboardController");
 
 router.get("/artist", protect, restrictTo("artist"), getArtistDashboard);
 router.get("/buyer", protect, restrictTo("buyer"), getBuyerDashboard);

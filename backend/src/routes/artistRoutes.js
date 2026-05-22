@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 // Controllers
-const artistController = require("../controller/artistController");
+const artistController = require("../controllers/artistController");
 
 // Middlewares
 const { protect, restrictTo } = require("../middleware/authMiddleware");

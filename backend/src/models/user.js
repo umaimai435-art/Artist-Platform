@@ -8,64 +8,56 @@ const userSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-
     email: {
       type: String,
       required: true,
       unique: true,
       lowercase: true,
     },
-
     password: {
       type: String,
       required: true,
     },
-
     role: {
       type: String,
-      enum: ["buyer", "seller"],
+      enum: ["buyer", "seller", "admin"], // Admin role bhi add kar di hai safety ke liye
       default: "buyer",
     },
-
     bio: {
       type: String,
       default: "",
     },
-
     isVerified: {
       type: Boolean,
       default: false,
     },
-
     otp: String,
     otpExpires: Date,
   },
   { timestamps: true }
 );
 
-/// 🔐 HASH PASSWORD BEFORE SAVE
-userSchema.pre("save", async function (next) {
+/* ======================================
+   PASSWORD HASHING (Fixed next() error)
+====================================== */
+userSchema.pre("save", async function () {
+  // Agar password modify nahi hua toh aage barh jayen
+  if (!this.isModified("password")) return;
+
   try {
-    if (this.isModified("password")) {
-      this.password = await bcrypt.hash(this.password, 10);
-    }
-
-    // OTP generation (only for new users or unverified users)
-    if (this.isNew || !this.isVerified) {
-      this.otp = Math.floor(100000 + Math.random() * 900000).toString();
-      this.otpExpires = Date.now() + 10 * 60 * 1000;
-    }
-
-    next();
+    // Salt generate karke hash karein
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
   } catch (err) {
-    next(err);
+    throw new Error(err);
   }
 });
 
-/// 🔑 COMPARE PASSWORD METHOD (THIS FIXES YOUR ERROR)
+/* ======================================
+   COMPARE PASSWORD METHOD
+====================================== */
 userSchema.methods.comparePassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-module.exports =
-  mongoose.models.User || mongoose.model("User", userSchema);
+module.exports = mongoose.models.User || mongoose.model("User", userSchema);

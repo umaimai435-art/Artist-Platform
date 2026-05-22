@@ -1,18 +1,15 @@
+
 const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const path = require("path");
+const mongoose = require("mongoose");
+const dns = require("dns");
 
-const connectDB = require("./src/config/db");
-
-// ROUTES
-const authRoutes = require("./src/routes/authRoutes.js");
-const userRoutes = require("./src/routes/userRoutes");
-const artistRoutes = require("./src/routes/artistRoutes");
-const artworkRoutes = require("./src/routes/artworkRoutes");
-const orderRoutes = require("./src/routes/orderRoutes");
-const reviewRoutes = require("./src/routes/reviewRoutes");
-const adminRoutes = require("./src/routes/adminRoutes");
+// ==========================================
+// DNS FIX (Pakistan ISP issue workaround)
+// ==========================================
+dns.setServers(["8.8.8.8", "8.8.4.4", "1.1.1.1"]);
 
 // ==========================================
 // CONFIG
@@ -20,9 +17,10 @@ const adminRoutes = require("./src/routes/adminRoutes");
 dotenv.config();
 
 // ==========================================
-// DATABASE
+// DB CONNECT
 // ==========================================
-connectDB();
+const connectDB = require("./src/config/db");
+connectDB(); // ✅ sirf yahan call
 
 // ==========================================
 // EXPRESS APP
@@ -30,7 +28,15 @@ connectDB();
 const app = express();
 
 // ==========================================
-// CORS CONFIG (IMPORTANT FIX)
+// REQUEST LOGGER
+// ==========================================
+app.use((req, res, next) => {
+  console.log(`➡️ ${req.method} ${req.originalUrl}`);
+  next();
+});
+
+// ==========================================
+// CORS
 // ==========================================
 app.use(
   cors({
@@ -47,7 +53,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ==========================================
-// STATIC FILES (UPLOADS)
+// STATIC FILES
 // ==========================================
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
@@ -59,15 +65,15 @@ app.get("/", (req, res) => {
 });
 
 // ==========================================
-// API ROUTES
+// ROUTES
 // ==========================================
-app.use("/api/auth", authRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/artists", artistRoutes);
-app.use("/api/artworks", artworkRoutes);
-app.use("/api/orders", orderRoutes);
-app.use("/api/reviews", reviewRoutes);
-app.use("/api/admin", adminRoutes);
+app.use("/api/auth", require("./src/routes/authRoutes"));
+app.use("/api/users", require("./src/routes/userRoutes"));
+app.use("/api/artists", require("./src/routes/artistRoutes"));
+app.use("/api/artworks", require("./src/routes/artworkRoutes"));
+app.use("/api/orders", require("./src/routes/orderRoutes"));
+app.use("/api/reviews", require("./src/routes/reviewRoutes"));
+app.use("/api/admin", require("./src/routes/adminRoutes"));
 
 // ==========================================
 // 404 HANDLER
@@ -96,7 +102,6 @@ app.use((err, req, res, next) => {
 // START SERVER
 // ==========================================
 const PORT = process.env.PORT || 5000;
-
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });

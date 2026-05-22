@@ -13,6 +13,9 @@ const Login = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+
+    if (loading) return;
+
     setLoading(true);
     setError("");
 
@@ -29,20 +32,29 @@ const Login = () => {
 
       const { token, user } = res.data;
 
-      // safety check (prevents crash)
+      // safety check
       if (!token || !user) {
         throw new Error("Invalid server response");
       }
 
-      // SAVE AUTH DATA
+      // ================= SAVE DATA =================
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("role", user.role);
+      localStorage.setItem("userId", user._id);
 
-      // ROLE BASED REDIRECT
+      // ================= ROLE BASED REDIRECT =================
       if (user.role === "seller") {
         navigate("/seller/dashboard");
-      } else {
+      } 
+      else if (user.role === "buyer") {
         navigate("/buyer/dashboard");
+      } 
+      else if (user.role === "admin") {
+        navigate("/admin/dashboard");
+      } 
+      else {
+        navigate("/");
       }
 
     } catch (err) {
@@ -51,7 +63,7 @@ const Login = () => {
       setError(
         err.response?.data?.message ||
         err.message ||
-        "Login failed. Please check your credentials."
+        "Login failed. Please try again."
       );
     } finally {
       setLoading(false);
@@ -59,97 +71,70 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black px-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-black px-4">
 
-      {/* Decorative Glows */}
-      <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-purple-600/20 blur-[120px] rounded-full"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-80 h-80 bg-blue-900/10 blur-[100px] rounded-full"></div>
+      <div className="w-full max-w-md bg-neutral-900 border border-white/10 rounded-2xl p-8">
 
-      {/* Card */}
-      <div className="w-full max-w-md bg-neutral-900/50 backdrop-blur-xl border border-white/10 shadow-2xl rounded-2xl p-10 relative z-10">
+        <h2 className="text-2xl font-bold text-white text-center mb-6">
+          Login
+        </h2>
 
-        {/* Header */}
-        <div className="text-center mb-10">
-          <h2 className="text-3xl font-black text-white uppercase tracking-tighter">
-            Access <span className="text-purple-500">ArtistryPro</span>
-          </h2>
-          <p className="text-gray-500 text-xs mt-2 uppercase tracking-widest font-bold">
-            Sign in to your creative space
-          </p>
-        </div>
-
-        {/* Error */}
         {error && (
-          <p className="text-red-500 text-sm text-center mb-4">
+          <p className="text-red-400 text-sm text-center mb-4">
             {error}
           </p>
         )}
 
-        {/* Form */}
-        <form onSubmit={handleLogin} className="space-y-6">
+        <form onSubmit={handleLogin} className="space-y-4">
 
           {/* Email */}
-          <div className="relative">
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="peer w-full bg-black/50 border border-white/10 px-4 pt-6 pb-2 text-white rounded-lg focus:outline-none focus:border-purple-500 placeholder-transparent"
-              placeholder="Email"
-            />
-            <label className="absolute left-4 top-2 text-[10px] font-bold text-purple-500 uppercase tracking-widest">
-              Email Address
-            </label>
-          </div>
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full p-3 rounded bg-black border border-white/10 text-white"
+            required
+          />
 
           {/* Password */}
           <div className="relative">
             <input
               type={showPassword ? "text" : "password"}
-              required
+              placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="peer w-full bg-black/50 border border-white/10 px-4 pt-6 pb-2 text-white rounded-lg focus:outline-none focus:border-purple-500 placeholder-transparent"
-              placeholder="Password"
+              className="w-full p-3 rounded bg-black border border-white/10 text-white"
+              required
             />
-
-            <label className="absolute left-4 top-2 text-[10px] font-bold text-purple-500 uppercase tracking-widest">
-              Password
-            </label>
 
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-4 text-[10px] font-black text-gray-400 uppercase hover:text-white transition"
+              className="absolute right-3 top-3 text-xs text-gray-400"
             >
               {showPassword ? "Hide" : "Show"}
             </button>
           </div>
 
-          {/* Submit */}
+          {/* Button */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-white text-black font-black py-4 rounded-lg uppercase tracking-widest hover:bg-purple-600 hover:text-white transition disabled:bg-gray-600"
+            className="w-full bg-white text-black font-bold py-3 rounded hover:bg-purple-600 hover:text-white transition"
           >
-            {loading ? "Authenticating..." : "Login"}
+            {loading ? "Logging in..." : "Login"}
           </button>
 
         </form>
 
         {/* Footer */}
-        <div className="mt-8 text-center border-t border-white/5 pt-8">
-          <p className="text-gray-500 text-xs uppercase tracking-widest font-bold">
-            Don&apos;t have an account?
-            <Link
-              to="/register"
-              className="text-purple-500 hover:text-white ml-2 transition-colors"
-            >
-              Register
-            </Link>
-          </p>
-        </div>
+        <p className="text-gray-400 text-sm text-center mt-6">
+          Don't have an account?{" "}
+          <Link to="/register" className="text-purple-500">
+            Register
+          </Link>
+        </p>
 
       </div>
     </div>

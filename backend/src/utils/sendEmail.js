@@ -2,11 +2,15 @@ const nodemailer = require("nodemailer");
 
 const sendEmail = async ({ to, email, subject, html, text }) => {
   try {
-    // ✅ accept BOTH "to" and "email"
+    // ✅ normalize recipient
     const recipient = to || email;
 
-    if (!recipient) {
-      throw new Error("No recipient email provided");
+    if (!recipient || typeof recipient !== "string") {
+      throw new Error("No valid recipient email provided");
+    }
+
+    if (!subject) {
+      throw new Error("Email subject is missing");
     }
 
     const transporter = nodemailer.createTransport({
@@ -21,13 +25,13 @@ const sendEmail = async ({ to, email, subject, html, text }) => {
       from: `ArtistryPro <${process.env.EMAIL_USER}>`,
       to: recipient,
       subject,
-      html,
-      text,
+      html: html || "",
+      text: text || "",
     });
 
   } catch (error) {
-    console.log("Email error:", error);
-    throw new Error("Email could not be sent");
+    console.log("Email error:", error.message);
+    throw new Error(error.message || "Email could not be sent");
   }
 };
 

@@ -5,7 +5,7 @@ const {
   register,
   login,
   verifyOtp,
-} = require("../controller/authController");
+} = require("../controllers/authController");
 
 // =====================
 // AUTH ROUTES (Buyer + Artist)

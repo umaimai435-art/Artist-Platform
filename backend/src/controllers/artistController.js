@@ -7,6 +7,14 @@ const Order = require("../models/order");
 ====================================== */
 exports.createProfile = async (req, res) => {
   try {
+    // 🔥 FIX: req.user safety check
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized: user not found in request",
+      });
+    }
+
     const profileData = {
       ...req.body,
       userId: req.user.id, // link profile with logged-in seller
@@ -55,6 +63,14 @@ exports.getArtists = async (req, res) => {
 ====================================== */
 exports.getDashboardStats = async (req, res) => {
   try {
+    // 🔥 FIX: req.user safety check
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized: user not found in request",
+      });
+    }
+
     const sellerId = req.user.id;
 
     // Total artworks by seller

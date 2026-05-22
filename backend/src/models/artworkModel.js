@@ -1,17 +1,31 @@
-const express = require("express");
-const router = express.Router();
+const mongoose = require("mongoose");
 
-const {
-  createArtwork,
-  getAllArtworks,
-} = require("../controllers/artworkController");
+const artworkSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: true,
+    },
+    description: {
+      type: String,
+    },
+    image: {
+      type: String,
+      required: true,
+    },
+    price: {
+      type: Number,
+      required: true,
+    },
 
-const { protect } = require("../middleware/authMiddleware");
+    // 🔴 THIS FIELD WAS MISSING / WRONG IN MOST CASES
+    artist: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+  },
+  { timestamps: true }
+);
 
-// SELLER UPLOAD ARTWORK
-router.post("/", protect, createArtwork);
-
-// BUYER VIEW ALL ARTWORKS
-router.get("/", getAllArtworks);
-
-module.exports = router;
+module.exports = mongoose.model("Artwork", artworkSchema);

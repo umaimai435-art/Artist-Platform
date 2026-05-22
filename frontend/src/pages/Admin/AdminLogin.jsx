@@ -10,50 +10,13 @@ export default function AdminLogin() {
 
   const navigate = useNavigate();
 
-  // const handleLogin = async (e) => {
-  //   e.preventDefault();
-  //   setLoading(true);
-  //   setError("");
-
-  //   try {
-  //     const res = await axios.post("http://localhost:5000/api/admin/login", {
-  //       email,
-  //       password,
-  //     });
-
-  //     const token = res.data?.token;
-  //     const user = res.data?.admin || res.data?.user;
-
-  //     if (!user) {
-  //       setError("Invalid server response");
-  //       setLoading(false);
-  //       return;
-  //     }
-
-  //     if (user.role !== "admin") {
-  //       setError("Access denied. Admin only.");
-  //       setLoading(false);
-  //       return;
-  //     }
-
-  //     localStorage.setItem("adminToken", token);
-  //     localStorage.setItem("adminUser", JSON.stringify(user));
-  //     navigate("/adminDashboard");
-
-  //   } catch (err) {
-  //     setError(err.response?.data?.message || "Login failed");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
     try {
-      const res = await axios.post("http://localhost:5000/api/admin/adminLogin", {
+      const res = await axios.post("http://localhost:5000/api/admin/login", {
         email,
         password,
       });

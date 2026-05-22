@@ -1,162 +1,335 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import axios from 'axios';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { FaHeart, FaRegHeart } from "react-icons/fa";
 
-const ExploreArt = () => {
+const API_URL = "http://localhost:5000/api/artworks";
+const WISHLIST_API_URL = "http://localhost:5000/api/wishlist";
+
+const ExploreArtwork = () => {
   const [artworks, setArtworks] = useState([]);
+  const [wishlistIds, setWishlistIds] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [category, setCategory] = useState('');
+  const [refreshTrigger, setRefreshTrigger] = useState(false);
 
-  const API_BASE_URL = "http://localhost:5000";
+  // Filters State
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
 
-  // Optimized Fetch Logic
-  const fetchArtworks = useCallback(async () => {
+  const categories = [
+    "All",
+    "Abstract",
+    "Landscape",
+    "Portrait",
+    "Modern",
+    "Islamic",
+    "Calligraphy",
+    "Sketches",
+  ];
+
+  // Fetch current user's wishlist IDs to display filled/empty heart icons
+  const fetchWishlistIds = async () => {
     try {
-      setLoading(true);
-      const { data } = await axios.get(`${API_BASE_URL}/api/artworks`, {
-        params: { search, category } 
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      const res = await axios.get(WISHLIST_API_URL, {
+        headers: { Authorization: `Bearer ${token}` },
       });
-      setArtworks(data.data);
+      if (res.data?.success && res.data?.data) {
+        setWishlistIds(res.data.data.map((item) => item._id));
+      }
     } catch (err) {
-      console.error("Error fetching artworks:", err);
-    } finally {
-      setLoading(false);
+      console.error("Error fetching wishlist IDs:", err);
     }
-  }, [search, category]);
+  };
 
+  // Fetch masterpieces based on active search parameters
   useEffect(() => {
-    const delayDebounce = setTimeout(() => {
-      fetchArtworks();
-    }, 500);
+    const fetchArtworks = async () => {
+      try {
+        setLoading(true);
+        const res = await axios.get(API_URL, {
+          params: {
+            search: searchTerm || undefined,
+            category: selectedCategory && selectedCategory !== "All" ? selectedCategory : undefined,
+          },
+        });
 
-    return () => clearTimeout(delayDebounce);
-  }, [fetchArtworks]);
+        if (res.data?.success && res.data?.data) {
+          setArtworks(res.data.data);
+        } else {
+          setArtworks([]);
+        }
+      } catch (err) {
+        console.error("Backend offline or connection issue:", err);
+        setArtworks([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchArtworks();
+    fetchWishlistIds();
+  }, [searchTerm, selectedCategory, refreshTrigger]);
+
+  // Handle dynamic real-time heart icon toggle activation
+  const handleToggleWishlist = async (artworkId) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("Please login as a buyer to save your favorite artworks!");
+        return;
+      }
+
+      const res = await axios.post(
+        `${WISHLIST_API_URL}/toggle`,
+        { artworkId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (res.data?.success) {
+        if (wishlistIds.includes(artworkId)) {
+          setWishlistIds(wishlistIds.filter((id) => id !== artworkId));
+        } else {
+          setWishlistIds([...wishlistIds, artworkId]);
+        }
+      }
+    } catch (err) {
+      console.error("Wishlist action failed:", err);
+      alert("Could not update wishlist. Please try again.");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "70vh",
+          color: "#a855f7",
+          fontSize: "20px",
+          background: "#0d0d11",
+          fontWeight: "bold",
+        }}
+      >
+        Exploring Masterpieces... 🎨✨
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-[#fcfcfd] px-4 md:px-10 py-12">
-      <div className="max-w-7xl mx-auto">
-        {/* --- Header Section --- */}
-        <header className="mb-12 text-center md:text-left">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight">
-            Discover Masterpieces
-          </h1>
-          <p className="mt-4 text-lg text-gray-500 max-w-2xl">
-            Explore a curated collection of original artworks from independent creators around the globe.
-          </p>
-        </header>
+    <div style={{ minHeight: "100vh", background: "#0d0d11", color: "#fff", padding: "40px 20px" }}>
+      {/* HEADER */}
+      <div style={{ textAlign: "center", marginBottom: "45px" }}>
+        <h1 style={{ color: "#a855f7", fontSize: "2.6rem", fontWeight: "900", letterSpacing: "-0.5px" }}>
+          Explore Art Gallery
+        </h1>
+        <p style={{ color: "#8e8ea0", marginTop: "8px", fontSize: "15px" }}>
+          Discover premium handcrafted visual art from certified global creators
+        </p>
 
-        {/* --- Search & Filter Bar --- */}
-        <div className="sticky top-4 z-10 mb-12 bg-white/80 backdrop-blur-md p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-4 items-center">
-          <div className="relative w-full md:flex-1 group">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-purple-600 transition-colors">
-              🔍
-            </span>
-            <input
-              type="text"
-              placeholder="Search by title, artist, or style..."
-              className="pl-12 pr-4 py-3 bg-gray-50 border-none rounded-xl w-full focus:ring-2 focus:ring-purple-500 transition shadow-inner"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          
-          <div className="w-full md:w-64">
-            <select
-              className="px-4 py-3 bg-gray-50 border-none rounded-xl w-full focus:ring-2 focus:ring-purple-500 transition shadow-inner appearance-none cursor-pointer"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            >
-              <option value="">All Art Forms</option>
-              <option value="Oil Painting">Oil Painting</option>
-              <option value="Sketch">Sketch</option>
-              <option value="Abstract">Abstract</option>
-              <option value="Digital Art">Digital Art</option>
-            </select>
-          </div>
-        </div>
-
-        {/* --- Results Section --- */}
-        {loading ? (
-          <div className="mt-32 flex flex-col items-center justify-center space-y-4">
-             <div className="w-16 h-16 border-4 border-purple-100 border-t-purple-600 rounded-full animate-spin"></div>
-             <p className="text-gray-400 font-medium animate-pulse">Curating your gallery...</p>
-          </div>
-        ) : (
-          <>
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-gray-500 font-medium">Showing {artworks.length} results</h2>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-              {artworks && artworks.length > 0 ? (
-                artworks.map((art) => (
-                  <Link
-                    to={`/artwork/${art._id}`}
-                    key={art._id}
-                    className="flex flex-col bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 group border border-gray-50"
-                  >
-                    {/* Image Container */}
-                    <div className="h-64 overflow-hidden relative">
-                      <img
-                        src={`${API_BASE_URL}${art.image}`}
-                        alt={art.title}
-                        onError={(e) => { e.target.src = 'https://via.placeholder.com/600x400?text=Gallery+Preview'; }}
-                        className="w-full h-full object-cover group-hover:scale-110 transition duration-700 ease-out"
-                      />
-                      {/* Fixed: bg-gradient-to-t */}
-                      {/* Gradient ki jagah solid black translucent overlay */}
-<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      <div className="absolute top-4 left-4">
-                         <span className="bg-white/90 backdrop-blur text-purple-700 text-[10px] font-bold px-3 py-1.5 rounded-full shadow-sm uppercase tracking-widest">
-                          {art.category}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Info Container */}
-                    <div className="p-6 flex flex-col flex-1">
-                      <h3 className="font-bold text-gray-900 text-lg leading-tight group-hover:text-purple-700 transition-colors">
-                        {art.title}
-                      </h3>
-                      <p className="text-sm text-gray-400 mt-2 flex items-center">
-                         <span className="w-4 h-px bg-gray-300 mr-2"></span>
-                         {art.artist?.name || 'Unknown Artist'}
-                      </p>
-                      
-                      <div className="mt-auto pt-5 flex items-center justify-between border-t border-gray-50">
-                        <div className="flex flex-col">
-                          <span className="text-[10px] text-gray-400 uppercase font-semibold">Current Price</span>
-                          <span className="font-black text-2xl text-gray-900">${art.price}</span>
-                        </div>
-                        <div className="bg-gray-900 text-white p-3 rounded-xl group-hover:bg-purple-600 transition-colors duration-300">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                ))
-              ) : (
-                <div className="col-span-full flex flex-col items-center justify-center py-24 bg-white rounded-3xl border-2 border-dashed border-gray-100">
-                  <div className="text-6xl grayscale mb-6">🏜️</div>
-                  <h3 className="text-2xl font-bold text-gray-800">No art matches your search</h3>
-                  <p className="text-gray-500 mt-2">Try clearing your filters or using different keywords.</p>
-                  <button 
-                    onClick={() => {setSearch(''); setCategory('');}}
-                    className="mt-6 text-purple-600 font-bold hover:underline"
-                  >
-                    Clear all filters
-                  </button>
-                </div>
-              )}
-            </div>
-          </>
-        )}
+        <button
+          onClick={() => setRefreshTrigger((prev) => !prev)}
+          style={{
+            marginTop: "20px",
+            background: "linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(99, 102, 241, 0.15))",
+            border: "1px solid rgba(168, 85, 247, 0.4)",
+            color: "#d8b4fe",
+            padding: "8px 22px",
+            borderRadius: "30px",
+            fontSize: "12px",
+            cursor: "pointer",
+            fontWeight: "600",
+            letterSpacing: "0.5px",
+            transition: "all 0.3s ease",
+            boxShadow: "0 4px 15px rgba(168, 85, 247, 0.1)",
+          }}
+        >
+          🔄 Sync Latest Artist Uploads
+        </button>
       </div>
+
+      {/* FILTERS SECTION */}
+      <div
+        style={{
+          background: "#13131a",
+          padding: "25px",
+          borderRadius: "20px",
+          marginBottom: "45px",
+          border: "1px solid rgba(255,255,255,0.04)",
+          boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
+        }}
+      >
+        <input
+          type="text"
+          placeholder="Search art pieces, themes, or categories..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{
+            width: "100%",
+            padding: "16px 22px",
+            marginBottom: "22px",
+            background: "#0d0d11",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: "14px",
+            color: "#fff",
+            fontSize: "15px",
+            outline: "none",
+          }}
+        />
+
+        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat === "All" ? "" : cat)}
+              style={{
+                padding: "9px 20px",
+                borderRadius: "30px",
+                border: "none",
+                cursor: "pointer",
+                fontWeight: "600",
+                fontSize: "13px",
+                transition: "all 0.2s ease",
+                background:
+                  selectedCategory === cat || (cat === "All" && selectedCategory === "")
+                    ? "linear-gradient(135deg, #a855f7, #6366f1)"
+                    : "#1e1e24",
+                color: "#fff",
+              }}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* GALLERY GRID */}
+      {artworks.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "80px 0" }}>
+          <p style={{ color: "#6b6b7b", fontSize: "18px" }}>❌ No matching aesthetic masterpieces found.</p>
+        </div>
+      ) : (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+            gap: "35px",
+          }}
+        >
+          {artworks.map((art) => {
+            const isWishlisted = wishlistIds.includes(art._id);
+            return (
+              <div
+                key={art._id}
+                style={{
+                  background: "#13131a",
+                  borderRadius: "24px",
+                  overflow: "hidden",
+                  border: "1px solid rgba(255,255,255,0.03)",
+                  boxShadow: "0 10px 25px rgba(0,0,0,0.4)",
+                  display: "flex",
+                  flexDirection: "column",
+                  height: "420px",
+                  position: "relative",
+                }}
+              >
+                {/* Heart Button Element Overlay */}
+                <button
+                  onClick={() => handleToggleWishlist(art._id)}
+                  style={{
+                    position: "absolute",
+                    top: "15px",
+                    right: "15px",
+                    background: "rgba(0, 0, 0, 0.5)",
+                    border: "none",
+                    borderRadius: "50%",
+                    width: "36px",
+                    height: "36px",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    cursor: "pointer",
+                    zIndex: 5,
+                    transition: "transform 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.1)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                >
+                  {isWishlisted ? (
+                    <FaHeart size={18} color="#ef4444" />
+                  ) : (
+                    <FaRegHeart size={18} color="#fff" />
+                  )}
+                </button>
+
+                {/* Fixed Aspect Image Box */}
+                <div style={{ width: "100%", height: "260px", overflow: "hidden", background: "#1a1a24" }}>
+                  <img
+                    src={art.image?.startsWith("http") ? art.image : `http://localhost:5000${art.image}`}
+                    alt={art.title}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
+                  />
+                </div>
+
+                {/* Card Metadata Box */}
+                <div
+                  style={{
+                    padding: "24px",
+                    flexGrow: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <div>
+                    <h3
+                      style={{
+                        fontSize: "18px",
+                        fontWeight: "800",
+                        marginBottom: "6px",
+                        color: "#fff",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {art.title}
+                    </h3>
+                    <p style={{ color: "#8e8ea0", fontSize: "14px", fontWeight: "500" }}>{art.category}</p>
+                  </div>
+
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <strong style={{ color: "#34d399", fontSize: "17px", fontWeight: "800" }}>
+                      Rs {art.price.toLocaleString()}
+                    </strong>
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        color: "#c084fc",
+                        background: "rgba(168, 85, 247, 0.12)",
+                        padding: "4px 10px",
+                        borderRadius: "8px",
+                        fontWeight: "600",
+                        border: "1px solid rgba(168, 85, 247, 0.2)",
+                      }}
+                    >
+                      Original
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
 
-export default ExploreArt;
+export default ExploreArtwork;

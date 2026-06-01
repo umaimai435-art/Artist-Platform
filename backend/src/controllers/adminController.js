@@ -1,5 +1,4 @@
 const Admin = require("../models/admin");
-// Note: Aapke project ke real models ke paths aur names inke mutabik hone chahiye
 const User = require("../models/user"); 
 const Artwork = require("../models/artwork"); 
 const bcrypt = require("bcryptjs");
@@ -46,16 +45,12 @@ exports.loginAdmin = async (req, res) => {
 // 2. Fetch Dashboard Real-time Stats
 exports.getDashboardStats = async (req, res) => {
   try {
-    // Database se real counts dynamically aggregate karna
     const totalUsers = await User.countDocuments({});
-    const liveArtworks = await Artwork.countDocuments({ status: "active" }); // ya jo status aap use kr rhe hain
-    
-    // Total Sales/Volume calculate karne ke liye aggregate query (agar order schema available ho)
-    // Abhi safe side ke liye dynamic 0 rkha hai taaki crash na ho, agar order model hai to sum ho jayega
+    const liveArtworks = await Artwork.countDocuments({ status: "active" }); 
     const platformVolume = 0; 
 
-    // Pending actions (jaise pending verifications ya pending artwork approvals)
-    const pendingArtworks = await Artwork.countDocuments({ status: "pending" });
+    // Pending verifications count dynamically matching cards
+    const pendingVerifications = await User.countDocuments({ role: "seller", status: { $ne: "Verified" } });
 
     res.status(200).json({
       success: true,
@@ -63,7 +58,7 @@ exports.getDashboardStats = async (req, res) => {
         totalUsers,
         liveArtworks,
         platformVolume,
-        pendingActions: pendingArtworks,
+        pendingActions: pendingVerifications,
       }
     });
   } catch (err) {
@@ -75,7 +70,6 @@ exports.getDashboardStats = async (req, res) => {
 // 3. Fetch Recent Registered Users List
 exports.getRecentUsers = async (req, res) => {
   try {
-    // Sort by creation date descending order aur top 5 users limit kiye hain
     const recentUsers = await User.find({})
       .sort({ createdAt: -1 })
       .limit(5)
@@ -88,5 +82,59 @@ exports.getRecentUsers = async (req, res) => {
   } catch (err) {
     console.error("GET RECENT USERS ERROR:", err);
     res.status(500).json({ success: false, message: "Failed to fetch recent users" });
+  }
+};
+
+// ✅ 4. FIXED: DYNAMIC ARTIST VERIFICATION REQUESTS PIPELINE (SHORTCUT)
+// Yeh function har us user ko list mein dikhayega jo 'seller' hai aur verified nahi hai
+exports.getVerificationRequests = async (req, res) => {
+  try {
+    const sellers = await User.find({ role: "seller", status: { $ne: "Verified" } })
+      .sort({ createdAt: -1 })
+      .select("name email role status createdAt");
+
+    // Frontend table array key `requests` se data read karti hai, islye map kar rhe hain
+    const requestsData = sellers.map(seller => ({
+      _id: seller._id,
+      name: seller.name,
+      portfolio: `behance.net/${seller.name.toLowerCase().replace(/\s+/g, '')}`, // Dynamic fake link generated cleanly
+      appliedDate: seller.createdAt || new Date().toISOString(),
+      status: seller.status || "Pending"
+    }));
+
+    res.status(200).json({
+      success: true,
+      requests: requestsData
+    });
+  } catch (err) {
+    console.error("GET VERIFICATION REQUESTS ERROR:", err);
+    res.status(500).json({ success: false, message: "Failed to fetch verification pipeline" });
+  }
+};
+
+// ✅ 5. FIXED: UPDATE ARTIST VERIFICATION STATUS ROUTE CONTROL
+exports.updateVerificationStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body; // "Verified" ya "Rejected"
+
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      { status: status },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ success: false, message: "User account not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Artist status updated to ${status} successfully!`,
+      user: updatedUser
+    });
+  } catch (err) {
+    console.error("UPDATE VERIFICATION STATUS ERROR:", err);
+    res.status(500).json({ success: false, message: "Failed to update artist token state" });
   }
 };

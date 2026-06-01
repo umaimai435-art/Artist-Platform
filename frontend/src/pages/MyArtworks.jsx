@@ -15,13 +15,21 @@ export default function MyArtworks() {
       setErrorInfo(null);
       const token = localStorage.getItem("token");
 
+      if (!token) {
+        setErrorInfo("Authorization token missing. Please log in again.");
+        setLoading(false);
+        return;
+      }
+
       const response = await axios.get(
         "http://localhost:5000/api/artworks/my", 
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // Backend response handler
-      if (response.data && Array.isArray(response.data)) {
+      // Backend payload structure standard backup syncing
+      if (response.data && response.data.artworks && Array.isArray(response.data.artworks)) {
+        setArtworks(response.data.artworks);
+      } else if (response.data && Array.isArray(response.data)) {
         setArtworks(response.data);
       } else if (response.data?.success && Array.isArray(response.data.data)) {
         setArtworks(response.data.data);
@@ -30,7 +38,7 @@ export default function MyArtworks() {
       }
     } catch (error) {
       console.error("Failed to fetch artworks:", error);
-      setErrorInfo("Unable to sync live data from the server.");
+      setErrorInfo(error.response?.data?.message || "Unable to sync live data from the server.");
       setArtworks([]);
     } finally {
       setLoading(false);
@@ -87,8 +95,8 @@ export default function MyArtworks() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {artworks.map((art) => {
-            // Safe URL parsing for Multer storage path or cloud links
-            const rawImage = art.imageUrl || art.image || "";
+            // Mongoose Schema utilizes 'image' key
+            const rawImage = art.image || art.imageUrl || "";
             const finalImageUrl = rawImage.startsWith("http")
               ? rawImage
               : `http://localhost:5000/${rawImage}`;
@@ -96,7 +104,7 @@ export default function MyArtworks() {
             return (
               <div
                 key={art._id}
-                className="bg-[#141416] border border-gray-800 rounded-2xl overflow-hidden flex flex-column justify-between shadow-lg"
+                className="bg-[#141416] border border-gray-800 rounded-2xl overflow-hidden flex flex-col justify-between shadow-lg"
               >
                 <div>
                   <div className="h-48 w-full bg-[#1c1c1f] flex items-center justify-center overflow-hidden">

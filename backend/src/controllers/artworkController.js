@@ -17,8 +17,8 @@ exports.createArtwork = async (req, res) => {
       price: Number(price),
       category,
       image: imageUrl,
-      artist: req.user.id, 
-      status: "pending" // 👈 Yahan pending rakha hai taaki seedha live na ho
+      artist: req.user.id, // Auth middleware se exact ID aayegi
+      status: "pending"
     });
 
     await newArtwork.save();
@@ -110,9 +110,13 @@ exports.getArtworkById = async (req, res) => {
 // 7. GET LOGGED-IN ARTIST'S ARTWORKS
 exports.getMyArtworks = async (req, res) => {
   try {
+    // req.user.id authentication middleware se milta hai
     const myArtworks = await Artwork.find({ artist: req.user.id });
+    
+    // Response object ensure kr raha hai k 'artworks' array lazmi send ho
     res.status(200).json({ success: true, artworks: myArtworks });
   } catch (err) {
+    console.error("GET MY ARTWORKS ERROR:", err);
     res.status(500).json({ success: false, message: "Error fetching your artworks" });
   }
 };
@@ -123,8 +127,9 @@ exports.updateArtwork = async (req, res) => {
     let artwork = await Artwork.findById(req.params.id);
     if (!artwork) return res.status(404).json({ success: false, message: "Artwork not found" });
 
-    if (artwork.artist.toString() !== req.user.id) {
-      return res.status(403).json({ success: false, message: "Unauthorized" });
+    // Middleware data safe comparison
+    if (artwork.artist.toString() !== req.user.id.toString()) {
+      return res.status(403).json({ success: false, message: "Unauthorized to update this artwork" });
     }
 
     if (req.file) req.body.image = `/uploads/${req.file.filename}`;
@@ -132,6 +137,7 @@ exports.updateArtwork = async (req, res) => {
     artwork = await Artwork.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.status(200).json({ success: true, artwork });
   } catch (err) {
+    console.error("UPDATE ARTWORK ERROR:", err);
     res.status(500).json({ success: false, message: "Update failed" });
   }
 };
@@ -142,13 +148,14 @@ exports.deleteArtwork = async (req, res) => {
     const artwork = await Artwork.findById(req.params.id);
     if (!artwork) return res.status(404).json({ success: false, message: "Artwork not found" });
 
-    if (artwork.artist.toString() !== req.user.id && req.user.role !== "admin") {
-      return res.status(403).json({ success: false, message: "Unauthorized" });
+    if (artwork.artist.toString() !== req.user.id.toString() && req.user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Unauthorized to delete this artwork" });
     }
 
     await Artwork.findByIdAndDelete(req.params.id);
     res.status(200).json({ success: true, message: "Deleted successfully" });
   } catch (err) {
+    console.error("DELETE ARTWORK ERROR:", err);
     res.status(500).json({ success: false, message: "Delete failed" });
   }
 };

@@ -1,7 +1,6 @@
-
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
-import Sidebar from "./components/Sidebar"; // Sidebar import kiya
+import Sidebar from "./components/Sidebar";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 // Pages
@@ -13,14 +12,15 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
-import Order from "./pages/Order"; // Seller ke liye Customer Orders page
+import Order from "./pages/Order";
 import UploadArtwork from "./pages/UploadArtwork";
+import MyArtworks from "./pages/MyArtworks";
 import ArtworkDetails from "./pages/ArtworkDetails";
 import Reviews from "./pages/Reviews";
 import Notfound from "./pages/Notfound";
 import HowItWorks from "./pages/HowItWorks";
 import VerifyOtp from "./pages/Verify";
-import MyOrders from "./pages/MyOrders"; // Buyer ke liye apna Orders page
+import MyOrders from "./pages/MyOrders";
 import Wishlist from "./pages/Wishlist";
 
 // Dashboards
@@ -36,7 +36,7 @@ import OrdersEscrow from "./pages/Admin/OrdersEscrow";
 import ArtistVerifications from "./pages/Admin/ArtistVerifications";
 import SystemSettings from "./pages/Admin/SystemSettings";
 
-// Wrapper Component: Jo sirf store/client pages par Navbar dikhayega, Admin par nahi
+// ================= LAYOUTS =================
 const ClientLayout = ({ children }) => (
   <>
     <Navbar />
@@ -44,18 +44,12 @@ const ClientLayout = ({ children }) => (
   </>
 );
 
-// Wrapper Component: Jo saare Admin pages par Sidebar dikhayega aur content ko perfect spacing dega
 const AdminLayout = ({ children }) => (
   <div className="flex min-h-screen bg-[#0c0c0e] text-white">
-    {/* Warning yahan solve ki hai: flex-shrink-0 ko shrink-0 likha hai */}
     <div className="w-64 shrink-0">
       <Sidebar />
     </div>
-    
-    {/* Main content area jo bachi hui poori width lega aur left ke khali fasle ko khatam karega */}
-    <div className="flex-1 min-h-screen p-6 overflow-x-hidden">
-      {children}
-    </div>
+    <div className="flex-1 p-6 overflow-x-hidden">{children}</div>
   </div>
 );
 
@@ -63,7 +57,7 @@ const App = () => {
   return (
     <BrowserRouter>
       <Routes>
-        {/* ================= PUBLIC ROUTES ================= */}
+        {/* ===== PUBLIC ===== */}
         <Route path="/" element={<ClientLayout><Home /></ClientLayout>} />
         <Route path="/explore" element={<ClientLayout><ExploreArt /></ClientLayout>} />
         <Route path="/start-selling" element={<ClientLayout><StartSelling /></ClientLayout>} />
@@ -76,7 +70,7 @@ const App = () => {
         <Route path="/verify-otp" element={<ClientLayout><VerifyOtp /></ClientLayout>} />
         <Route path="/wishlist" element={<ClientLayout><Wishlist /></ClientLayout>} />
 
-        {/* ================= BUYER DASHBOARD ================= */}
+        {/* ===== BUYER ===== */}
         <Route
           path="/buyer/dashboard"
           element={
@@ -85,8 +79,6 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-
-        {/* ================= BUYER ONLY ROUTES ================= */}
         <Route
           path="/cart"
           element={
@@ -95,7 +87,6 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/checkout"
           element={
@@ -104,7 +95,6 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/my-orders"
           element={
@@ -114,7 +104,7 @@ const App = () => {
           }
         />
 
-        {/* ================= SELLER DASHBOARD ================= */}
+        {/* ===== SELLER / ARTIST ===== */}
         <Route
           path="/seller/dashboard"
           element={
@@ -123,8 +113,6 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-
-        {/* ================= SELLER ONLY ROUTES ================= */}
         <Route
           path="/upload"
           element={
@@ -133,7 +121,14 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-
+        <Route
+          path="/my-artworks"
+          element={
+            <ProtectedRoute role="seller">
+              <ClientLayout><MyArtworks /></ClientLayout>
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/seller/orders"
           element={
@@ -143,10 +138,8 @@ const App = () => {
           }
         />
 
-        {/* ================= ADMIN PUBLIC ROUTES ================= */}
+        {/* ===== ADMIN ===== */}
         <Route path="/adminLogin" element={<AdminLogin />} />
-
-        {/* ================= ADMIN PROTECTED ROUTES ================= */}
         <Route
           path="/adminDashboard"
           element={
@@ -155,7 +148,6 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-        
         <Route
           path="/admin/users"
           element={
@@ -164,7 +156,6 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/admin/artwork-approvals"
           element={
@@ -173,7 +164,6 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/admin/orders"
           element={
@@ -182,7 +172,6 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/admin/artist-verifications"
           element={
@@ -191,7 +180,6 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/admin/settings"
           element={
@@ -201,7 +189,7 @@ const App = () => {
           }
         />
 
-        {/* ================= 404 ================= */}
+        {/* ===== 404 ===== */}
         <Route path="*" element={<Notfound />} />
       </Routes>
     </BrowserRouter>

@@ -5,27 +5,46 @@ const artworkSchema = new mongoose.Schema(
     title: {
       type: String,
       required: true,
+      trim: true,
     },
+
     description: {
       type: String,
+      required: true,
     },
+
     image: {
       type: String,
       required: true,
     },
+
     price: {
       type: Number,
       required: true,
     },
 
-    // 🔴 THIS FIELD WAS MISSING / WRONG IN MOST CASES
+    // 🔥 IMPORTANT FIX HERE
     artist: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
+
+    category: {
+      type: String,
+      default: "General",
+    },
+
+    isSold: {
+      type: Boolean,
+      default: false,
+    },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
-module.exports = mongoose.model("Artwork", artworkSchema);
+// ✅ Prevent model overwrite crash
+module.exports =
+  mongoose.models.Artwork || mongoose.model("Artwork", artworkSchema);

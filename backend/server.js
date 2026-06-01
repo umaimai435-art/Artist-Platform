@@ -1,9 +1,7 @@
-
 const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const path = require("path");
-const mongoose = require("mongoose");
 const dns = require("dns");
 
 // ==========================================
@@ -20,7 +18,7 @@ dotenv.config();
 // DB CONNECT
 // ==========================================
 const connectDB = require("./src/config/db");
-connectDB(); // ✅ sirf yahan call
+connectDB(); // ✅ only called here
 
 // ==========================================
 // EXPRESS APP
@@ -74,6 +72,9 @@ app.use("/api/artworks", require("./src/routes/artworkRoutes"));
 app.use("/api/orders", require("./src/routes/orderRoutes"));
 app.use("/api/reviews", require("./src/routes/reviewRoutes"));
 app.use("/api/admin", require("./src/routes/adminRoutes"));
+
+// ✅🔥 MISSING ROUTE — THIS FIXES YOUR 404 ERROR
+app.use("/api/dashboard", require("./src/routes/dashboardRoutes"));
 
 // ==========================================
 // 404 HANDLER

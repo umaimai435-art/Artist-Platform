@@ -5,12 +5,20 @@ const router = express.Router();
 const { 
   loginAdmin, 
   getDashboardStats, 
-  getRecentUsers 
+  getRecentUsers,
+  getVerificationRequests,
+  updateVerificationStatus
 } = require("../controllers/adminController");
 
-// Note: Agar aapke pas admin Auth Middleware bana hua hai to endpoints ke beech lagayein, nahi to ye open routes hain
+// 1. Authentication Route
 router.post("/login", loginAdmin);
+
+// 2. Metrics & Stats Dashboard Routes
 router.get("/stats", getDashboardStats);
 router.get("/recent-users", getRecentUsers);
+
+// 3. Artist Verification Requests Pipeline Endpoints
+router.get("/verifications", getVerificationRequests);
+router.put("/verifications/:id", updateVerificationStatus);
 
 module.exports = router;

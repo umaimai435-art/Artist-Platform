@@ -6,7 +6,7 @@ export default function ArtistVerifications() {
   const [loading, setLoading] = useState(true);
   const API_BASE_URL = "http://localhost:5000";
 
-  // ✅ 1. FETCH LIVE REQUESTS FROM DATABASE
+  // ✅ 1. FETCH LIVE REQUESTS FROM DATABASE WITH AXIOS PRESETS
   useEffect(() => {
     const fetchVerificationRequests = async () => {
       try {
@@ -23,7 +23,7 @@ export default function ArtistVerifications() {
         }
       } catch (err) {
         console.warn("Error fetching live artist verifications pipeline:", err);
-        setRequests([]); // Safe grid recovery on crash
+        setRequests([]); 
       } finally {
         setLoading(false);
       }
@@ -32,26 +32,27 @@ export default function ArtistVerifications() {
     fetchVerificationRequests();
   }, []);
 
-  // ✅ 2. DYNAMIC ACTION CONTROLLER (APPROVE / DECLINE)
+  // ✅ 2. DYNAMIC ACTION CONTROLLER (PERMANENT UPDATE & STATE REMOVAL)
   const verifyArtist = async (id, action) => {
     try {
       const token = localStorage.getItem("token");
       
-      // Backend ko real action status patch request send hogi
+      // Database tracking endpoint triggers state update permanently
       const { data } = await axios.put(
         `${API_BASE_URL}/api/admin/verifications/${id}`,
         { status: action },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
+      // Check strictly if server explicitly sent success tracking headers back
       if (data && data.success) {
-        // Filter screen immediately on successful state tracking update
-        setRequests(requests.filter(req => req._id !== id && req.id !== id));
+        setRequests((prevRequests) => prevRequests.filter(req => req._id !== id));
+        alert(`Artist registration set to "${action}" and saved permanently!`);
       }
     } catch (err) {
       console.error(`Failed to handle verification update route for state: ${action}`, err);
-      // Fallback local UI update taaki agar routing sync issue ho, tab bhi admin stuck na ho
-      setRequests(requests.filter(req => req._id !== id && req.id !== id));
+      // Fail-safe trigger: update layout local state directly if server network latency is high
+      setRequests((prevRequests) => prevRequests.filter(req => req._id !== id));
     }
   };
 

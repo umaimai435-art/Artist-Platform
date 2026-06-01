@@ -1,4 +1,6 @@
- const express = require("express");
+
+
+const express = require("express");
 const router = express.Router();
 
 // =====================
@@ -14,9 +16,9 @@ const requiredFunctions = [
   "updateArtwork",
   "deleteArtwork",
   "getMyArtworks",
-  "getPendingArtworks", // New
-  "approveArtwork",      // New
-  "rejectArtwork"       // New
+  "getPendingArtworks", 
+  "approveArtwork",      
+  "rejectArtwork"       
 ];
 
 requiredFunctions.forEach((fn) => {
@@ -64,7 +66,7 @@ router.patch("/:id/reject", protect, restrictTo("admin"), rejectArtwork);
 /* ==========================================
     PROTECTED ROUTES (SELLER / ARTIST)
 ========================================== */
-// 🔹 Get logged-in seller's own artworks
+// 🔹 Get logged-in seller's own artworks (Moved up to prevent route collision)
 router.get("/my", protect, restrictTo("seller"), getMyArtworks);
 
 // 🔹 Create new artwork (Default status will be "pending")
@@ -76,6 +78,9 @@ router.patch("/:id", protect, restrictTo("seller"), upload.single("image"), upda
 // 🔹 Delete artwork
 router.delete("/:id", protect, restrictTo("seller"), deleteArtwork);
 
+/* ==========================================
+    DYNAMIC PUBLIC ROUTES (MUST BE AT THE BOTTOM)
+========================================== */
 // 🔹 Get single artwork by ID
 router.get("/:id", getArtworkById);
 
